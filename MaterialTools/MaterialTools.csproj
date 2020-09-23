@@ -34,17 +34,32 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Dalamud">
-      <HintPath>C:\Users\aers\AppData\Roaming\XIVLauncher\addon\Hooks\Dalamud.dll</HintPath>
+      <HintPath Condition="Exists('$(AppData)\XIVLauncher\addon\Hooks')">$(AppData)\XIVLauncher\addon\Hooks\Dalamud.dll</HintPath>
+      <HintPath Condition="Exists('$(DalamudHooks)')">$(DalamudHooks)\Dalamud.dll</HintPath>
+      <HintPath Condition="Exists('..\Dalamud\Dalamud\bin\Debug')">..\Dalamud\Dalamud\bin\Debug\Dalamud.dll</HintPath>
+      <HintPath Condition="Exists('..\..\Dalamud\Dalamud\bin\Debug')">..\..\Dalamud\Dalamud\bin\Debug\Dalamud.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="ImGui.NET">
-      <HintPath>C:\Users\aers\AppData\Roaming\XIVLauncher\addon\Hooks\ImGui.NET.dll</HintPath>
+      <HintPath Condition="Exists('$(AppData)\XIVLauncher\addon\Hooks')">$(AppData)\XIVLauncher\addon\Hooks\ImGui.NET.dll</HintPath>
+      <HintPath Condition="Exists('$(DalamudHooks)')">$(DalamudHooks)\ImGuiScene.dll</HintPath>
+      <HintPath Condition="Exists('..\Dalamud\Dalamud\bin\Debug')">..\Dalamud\Dalamud\bin\Debug\ImGui.NET.dll</HintPath>
+      <HintPath Condition="Exists('..\..\Dalamud\Dalamud\bin\Debug')">..\..\Dalamud\Dalamud\bin\Debug\ImGui.NET.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="ImGuiScene">
-      <HintPath>C:\Users\aers\AppData\Roaming\XIVLauncher\addon\Hooks\ImGuiScene.dll</HintPath>
+      <HintPath Condition="Exists('$(AppData)\XIVLauncher\addon\Hooks')">$(AppData)\XIVLauncher\addon\Hooks\ImGuiScene.dll</HintPath>
+      <HintPath Condition="Exists('$(DalamudHooks)')">$(DalamudHooks)\ImGuiScene.dll</HintPath>
+      <HintPath Condition="Exists('..\Dalamud\Dalamud\bin\Debug')">..\Dalamud\Dalamud\bin\Debug\ImGuiScene.dll</HintPath>
+      <HintPath Condition="Exists('..\..\Dalamud\Dalamud\bin\Debug')">..\..\Dalamud\Dalamud\bin\Debug\ImGuiScene.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Lumina, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Users\aers\AppData\Roaming\XIVLauncher\addon\Hooks\Lumina.dll</HintPath>
+      <HintPath Condition="Exists('$(AppData)\XIVLauncher\addon\Hooks')">$(AppData)\XIVLauncher\addon\Hooks\Lumina.dll</HintPath>
+      <HintPath Condition="Exists('$(DalamudHooks)')">$(DalamudHooks)\Lumina.dll</HintPath>
+      <HintPath Condition="Exists('..\Dalamud\Dalamud\bin\Debug')">..\Dalamud\Dalamud\bin\Debug\Lumina.dll</HintPath>
+      <HintPath Condition="Exists('..\..\Dalamud\Dalamud\bin\Debug')">..\..\Dalamud\Dalamud\bin\Debug\Lumina.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
