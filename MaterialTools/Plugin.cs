@@ -23,7 +23,9 @@ namespace MaterialTools
             this.MaterialPathHandler.Init();
 
             this.SettingsUI = new PluginUI(this);
+#if DEBUG
             this.SettingsUI.Visible = true;
+#endif
 
             this.PluginInterface.UiBuilder.OnBuildUi += DrawUI;
             this.PluginInterface.UiBuilder.OnOpenConfigUi += (sender, args) => this.SettingsUI.Visible = true;
