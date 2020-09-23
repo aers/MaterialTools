@@ -1,0 +1,11 @@
+{
+  "Author": "aers",
+  "Name": "Material Tools",
+  "Description": "Includes functions that modify how the game loads materials for models. /mtools to open the settings window.",
+  "InternalName": "MaterialTools",
+  "AssemblyVersion": "1.0.0.0",
+  "RepoUrl": "https://github.com/aers/MaterialTools",
+  "ApplicableVersion": "any",
+  "Tags": ["material", "skin", "override"],
+  "DalamudApiLevel": 1
+}
