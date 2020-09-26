@@ -3,6 +3,7 @@ using MaterialTools.GameStructs;
 using MaterialTools.Models;
 using System;
 using System.Numerics;
+using System.Threading;
 
 namespace MaterialTools
 {
@@ -44,9 +45,16 @@ namespace MaterialTools
             if (!Visible)
                 return;
 
-            ImGui.SetNextWindowSize(new Vector2(357, 63), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(new Vector2(357, 100), ImGuiCond.Always);
             if (ImGui.Begin($"{_plugin.Name} - Settings", ref visible, ImGuiWindowFlags.NoResize))
             {
+                bool fixGameBehavior = _plugin.Configuration.FixGameBehavior;
+                if (ImGui.Checkbox("Fix Game Behavior", ref fixGameBehavior))
+                {
+                    _plugin.Configuration.FixGameBehavior = fixGameBehavior;
+                    _plugin.Configuration.Save();
+                }
+
                 bool enableSkinOverride = _plugin.Configuration.EnableSkinOverride;
                 if (ImGui.Checkbox("Enable Skin Material Override", ref enableSkinOverride))
                 {
@@ -114,33 +122,33 @@ namespace MaterialTools
                 switch (rme.Type)
                 {
                     case MaterialSkinType.GameOverride:
-                        DrawClanEntry(rme.FirstClan.ToString(), $"Game Override to {(RaceSexID)rme.OverrideRaceSexID}", MaterialPathHandler.BuildSkinMaterialPath(rme.OverrideRaceSexID, 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.FirstClan.ToString(), $"Game Override to {(RaceSexId)rme.OverrideRaceSexID}", MaterialPathHandler.BuildBodyMaterialPath(rme.OverrideRaceSexID, 1, var, "_a.mtrl"));
                         ImGui.NextColumn();
-                        DrawClanEntry(rme.SecondClan.ToString(), $"Game Override to {(RaceSexID)rme.OverrideRaceSexID}", MaterialPathHandler.BuildSkinMaterialPath(rme.OverrideRaceSexID, 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.SecondClan.ToString(), $"Game Override to {(RaceSexId)rme.OverrideRaceSexID}", MaterialPathHandler.BuildBodyMaterialPath(rme.OverrideRaceSexID, 1, var, "_a.mtrl"));
                         break;
 
                     case MaterialSkinType.GameRaceVariant:
-                        DrawClanEntry(rme.FirstClan.ToString(), $"Game Race Variant", MaterialPathHandler.BuildSkinMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.FirstClan.ToString(), $"Game Race Variant", MaterialPathHandler.BuildBodyMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
                         ImGui.NextColumn();
-                        DrawClanEntry(rme.SecondClan.ToString(), $"Game Race Variant", MaterialPathHandler.BuildSkinMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.SecondClan.ToString(), $"Game Race Variant", MaterialPathHandler.BuildBodyMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
                         break;
 
                     case MaterialSkinType.GameRaceClanVariant:
-                        DrawClanEntry(rme.FirstClan.ToString(), $"Game Race+Clan Variant", MaterialPathHandler.BuildSkinMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.FirstClan.ToString(), $"Game Race+Clan Variant", MaterialPathHandler.BuildBodyMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
                         ImGui.NextColumn();
-                        DrawClanEntry(rme.SecondClan.ToString(), $"Game Race+Clan Variant", MaterialPathHandler.BuildSkinMaterialPath(rme.SecondClanRaceSexID, rme.FirstClanRaceSexID == rme.SecondClanRaceSexID ? 101 : 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.SecondClan.ToString(), $"Game Race+Clan Variant", MaterialPathHandler.BuildBodyMaterialPath(rme.SecondClanRaceSexID, rme.FirstClanRaceSexID == rme.SecondClanRaceSexID ? 101 : 1, var, "_a.mtrl"));
                         break;
 
                     case MaterialSkinType.RaceVariant:
-                        DrawClanEntry(rme.FirstClan.ToString(), $"New Race Variant", MaterialPathHandler.BuildSkinMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.FirstClan.ToString(), $"New Race Variant", MaterialPathHandler.BuildBodyMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
                         ImGui.NextColumn();
-                        DrawClanEntry(rme.SecondClan.ToString(), $"New Race Variant", MaterialPathHandler.BuildSkinMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.SecondClan.ToString(), $"New Race Variant", MaterialPathHandler.BuildBodyMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
                         break;
 
                     case MaterialSkinType.RaceClanVariant:
-                        DrawClanEntry(rme.FirstClan.ToString(), $"New Race+Clan Variant", MaterialPathHandler.BuildSkinMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.FirstClan.ToString(), $"New Race+Clan Variant", MaterialPathHandler.BuildBodyMaterialPath(rme.FirstClanRaceSexID, 1, var, "_a.mtrl"));
                         ImGui.NextColumn();
-                        DrawClanEntry(rme.SecondClan.ToString(), $"New Race+Clan Variant", MaterialPathHandler.BuildSkinMaterialPath(rme.SecondClanRaceSexID, rme.FirstClanRaceSexID == rme.SecondClanRaceSexID ? 101 : 1, var, "_a.mtrl"));
+                        DrawClanEntry(rme.SecondClan.ToString(), $"New Race+Clan Variant", MaterialPathHandler.BuildBodyMaterialPath(rme.SecondClanRaceSexID, rme.FirstClanRaceSexID == rme.SecondClanRaceSexID ? 101 : 1, var, "_a.mtrl"));
                         break;
                 }
 

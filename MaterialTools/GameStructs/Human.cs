@@ -129,7 +129,7 @@ namespace MaterialTools.GameStructs
     }
 
     // others exist (NPC etc)
-    public enum RaceSexID
+    public enum RaceSexId
     {
         MidlanderM = 101,
         MidlanderF = 201,

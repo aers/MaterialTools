@@ -13,9 +13,9 @@ namespace MaterialTools
     {
         public int Version { get; set; } = 0;
 
-        public bool EnableSkinOverride { get; set; } = true;
+        public bool EnableSkinOverride { get; set; } = false;
 
-        public bool FixGameBehavior { get; set; } = true;
+        public bool FixGameBehavior { get; set; } = false;
 
         // the below exist just to make saving less cumbersome
 

@@ -58,15 +58,15 @@ namespace MaterialTools
             var rme = new RaceMaterialEntry();
             rme.FirstClanRaceSexID = firstClanRaceSexID;
             rme.SecondClanRaceSexID = secondClanRaceSexID;
-            rme.OverrideRaceSexID = ResolveRaceSexIDOverride(firstClanRaceSexID);
+            rme.OverrideRaceSexID = GetMaterialRaceSexIDOverride(firstClanRaceSexID);
             rme.Race = race;
             rme.Sex = sex;
             rme.FirstClan = firstClan;
             rme.SecondClan = secondClan;
             rme.VariantCount = variantCount;
 
-            string firstClanVariant = BuildSkinMaterialPath(firstClanRaceSexID, 1, 1, "_a.mtrl");
-            string secondClanVariant = BuildSkinMaterialPath(secondClanRaceSexID, firstClanRaceSexID == secondClanRaceSexID ? 101 : 1, 1, "_a.mtrl");
+            string firstClanVariant = BuildBodyMaterialPath(firstClanRaceSexID, 1, 1, "_a.mtrl");
+            string secondClanVariant = BuildBodyMaterialPath(secondClanRaceSexID, firstClanRaceSexID == secondClanRaceSexID ? 101 : 1, 1, "_a.mtrl");
 
             // dalamud's lumina interface doesnt support FileExists yet
             bool hasRaceVariant = _plugin.PluginInterface.Data.GetFile(firstClanVariant) != null;
@@ -94,17 +94,26 @@ namespace MaterialTools
         }
 
         // chara/human/c%04d/obj/body/b%04d/material/v%04d/mt_c%04db%04d%s
-        private static string skinFormatStr = "chara/human/c{0:D4}/obj/body/b{1:D4}/material/v{2:D4}/mt_c{3:D4}b{4:D4}{5}";
+        private static string bodyFormatStr = "chara/human/c{0:D4}/obj/body/b{1:D4}/material/v{2:D4}/mt_c{3:D4}b{4:D4}{5}";
 
-        public static string BuildSkinMaterialPath(ushort raceSexId, int bodyNumber, int variant, string remainder)
+        public static string BuildBodyMaterialPath(ushort raceSexId, int bodyId, int variant, string remainder)
         {
-            return String.Format(skinFormatStr, raceSexId, bodyNumber, variant, raceSexId, bodyNumber, remainder);
+            return String.Format(bodyFormatStr, raceSexId, bodyId, variant, raceSexId, bodyId, remainder);
+        }
+
+        // chara/human/c%04d/obj/face/f%04d/material/mt_c%04df%04d%s
+        private static string faceFormatStr = "chara/human/c{0:D4}/obj/face/f{1:D4}/material/mt_c{2:D4}f{3:D4}{4}";
+
+        public static string BuildFaceMaterialPath(ushort raceSexId, int faceId, string remainder)
+        {
+            return String.Format(faceFormatStr, raceSexId, faceId, raceSexId, faceId, remainder);
         }
 
         // function copied from game function
         // E8 ? ? ? ? 44 0F B6 9B ? ? ? ?
-        public ushort ResolveRaceSexIDOverride(ushort raceSexID)
+        public ushort GetMaterialRaceSexIDOverride(ushort raceSexID)
         {
+            // xxx2 are treated as xxx1
             if (raceSexID % 10 == 2)
                 raceSexID = (ushort)(raceSexID - 1);
 
@@ -143,26 +152,63 @@ namespace MaterialTools
 #if DEBUG
                         PluginLog.Log($"[Human::ResolveMaterialPath] {(HumanModelSlots)slot} - player-added race variant used for race {(Race)human->Race}");
 #endif
-                        return BuildSkinMaterialPath(human->RaceSexID, 1, variant, remainingString);
+                        return BuildBodyMaterialPath(human->RaceSexID, 1, variant, remainingString);
                     }
                     else if (rme.Type == MaterialSkinType.RaceClanVariant)
                     {
 #if DEBUG
                         PluginLog.Log($"[Human::ResolveMaterialPath] {(HumanModelSlots)slot} - player-added race+clan variant used for race {(Race)human->Race}, clan {(Clan)human->Clan}");
 #endif
-                        return BuildSkinMaterialPath(human->RaceSexID, human->Clan % 2 == 0 ? 101 : 1, variant, remainingString);
+                        return BuildBodyMaterialPath(human->RaceSexID, human->Clan % 2 == 0 ? 101 : 1, variant, remainingString);
                     }
                 }
             }
 
             // original game implementation
-            var overridenRaceSexID = ResolveRaceSexIDOverride(human->RaceSexID);
+            var overridenRaceSexID = GetMaterialRaceSexIDOverride(human->RaceSexID);
 
-            var bodyNumber = human->BodyType == 3 ? 91 : 1;
+            var bodyId = human->BodyType == 3 ? 91 : 1;
             if (checkClan && human->Clan == (byte)Clan.Xaela)
-                bodyNumber += 100; // Xaela have clan variants 
+                bodyId += 100; // Xaela have clan variants 
 
-            return BuildSkinMaterialPath(overridenRaceSexID, bodyNumber, variant, remainingString);
+            return BuildBodyMaterialPath(overridenRaceSexID, bodyId, variant, remainingString);
+        }
+
+        private unsafe string ResolveFaceMaterialPath(Human * human, byte * materialFilenameStr, bool overrideFace)
+        {
+            ushort raceSexId = 0;
+            ushort faceId = 0;
+
+            if (overrideFace)
+            {
+                // this is vanilla behavior for slot 13 only, overriding to face 1 and potentially a different race
+                // this creates seams when modding aura faces
+                raceSexId = GetMaterialRaceSexIDOverride(human->RaceSexID);
+
+                if (raceSexId == (ushort)RaceSexId.HighlanderM || raceSexId == (ushort)RaceSexId.HighlanderF || human->Clan == (byte)Clan.Xaela)
+                    faceId = 101;
+                else
+                    faceId = 1;
+
+                if (human->BodyType == 3)
+                    faceId += 90;
+            }
+            else
+            {
+                raceSexId = human->RaceSexID;
+
+                faceId = human->FaceID;
+
+                // hrothgar only have one set of "etc" materials and viera only have one set of "fac" materials
+                // the game simply checks the string
+                if (human->Clan == (byte)Clan.TheLost && *(int*)(materialFilenameStr + 13) == 0x6374655F || // 'cte_'
+                    human->Clan == (byte)Clan.Veena && *(int*)(materialFilenameStr + 13) == 0x6361665F) // 'caf_'
+                    faceId -= 100;
+            }
+
+            var remainingString = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr + 13));
+
+            return BuildFaceMaterialPath(raceSexId, faceId, remainingString);
         }
 
         private unsafe byte* ResolveMaterialPathDetour(Human* human, byte* outStrBuf, ulong bufSize, uint slot, byte* materialFilenameStr)
@@ -171,6 +217,7 @@ namespace MaterialTools
             var materialFilename = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr));
             PluginLog.Log($"hook call => Human::ResolveMaterialPath(this={(long)human:X}, outStrBuf={(long)outStrBuf:X}, bufSize={bufSize}, slot={slot}, materialFilenameStr={materialFilename})");
 #endif
+
             var outStr = "";
 
             switch (slot)
@@ -202,14 +249,20 @@ namespace MaterialTools
                     return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
                 // face
                 case 11:
-                    return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                    outStr = ResolveFaceMaterialPath(human, materialFilenameStr, false);
+                    break;
                 // viera: ear, other races: tail
                 case 12:
                     return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
                 // body model 2 (5 for aura)
                 case 13:
                     if (materialFilenameStr[8] == 0x66) // 'f' 
-                        return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                    {
+                        if (_plugin.Configuration.FixGameBehavior)
+                            outStr = ResolveFaceMaterialPath(human, materialFilenameStr, false);
+                        else
+                            outStr = ResolveFaceMaterialPath(human, materialFilenameStr, true);
+                    }
                     else
                         outStr = ResolveBodyMaterialPath(human, materialFilenameStr, true, slot);
                     break;
@@ -221,7 +274,7 @@ namespace MaterialTools
                 case 15:
                     // the game's version doesn't check the clan here and always loads b0001's skin even when the clan is xaela (who have their own skin)
                     // unsure if this creates seam issues but its an easy fix anyway
-                    if (_plugin.Configuration.FixGameBehavior == true)
+                    if (_plugin.Configuration.FixGameBehavior)
                         outStr = ResolveBodyMaterialPath(human, materialFilenameStr, true, slot);
                     else
                         outStr = ResolveBodyMaterialPath(human, materialFilenameStr, false, slot);
