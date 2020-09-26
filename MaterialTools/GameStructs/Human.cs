@@ -75,8 +75,8 @@ namespace MaterialTools.GameStructs
         [FieldOffset(0x936)] public byte LFingerVariantID;
 
         //
-        [FieldOffset(0x938)] public ushort RaceSexID; // cXXXX ID (0101, 0201, etc)
-        [FieldOffset(0x93C)] public ushort FaceID; // fXXXX ID
+        [FieldOffset(0x938)] public ushort RaceSexId; // cXXXX ID (0101, 0201, etc)
+        [FieldOffset(0x93C)] public ushort FaceId; // fXXXX ID
 
         // 0xA0C - A20 - visor data
         // 0xA38 - temporary storage when changing gear in slots

@@ -58,7 +58,7 @@ namespace MaterialTools
             var rme = new RaceMaterialEntry();
             rme.FirstClanRaceSexID = firstClanRaceSexID;
             rme.SecondClanRaceSexID = secondClanRaceSexID;
-            rme.OverrideRaceSexID = GetMaterialRaceSexIDOverride(firstClanRaceSexID);
+            rme.OverrideRaceSexID = GetMaterialRaceSexIdOverride(firstClanRaceSexID);
             rme.Race = race;
             rme.Sex = sex;
             rme.FirstClan = firstClan;
@@ -111,7 +111,7 @@ namespace MaterialTools
 
         // function copied from game function
         // E8 ? ? ? ? 44 0F B6 9B ? ? ? ?
-        public ushort GetMaterialRaceSexIDOverride(ushort raceSexID)
+        public ushort GetMaterialRaceSexIdOverride(ushort raceSexID)
         {
             // xxx2 are treated as xxx1
             if (raceSexID % 10 == 2)
@@ -142,9 +142,9 @@ namespace MaterialTools
             var remainingString = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr + 13));
 
             // override cases
-            if (_plugin.Configuration.EnableSkinOverride && human->BodyType != 3 && RaceMaterials.ContainsKey(human->RaceSexID))
+            if (_plugin.Configuration.EnableSkinOverride && human->BodyType != 3 && RaceMaterials.ContainsKey(human->RaceSexId))
             {
-                var rme = RaceMaterials[human->RaceSexID];
+                var rme = RaceMaterials[human->RaceSexId];
                 if (rme.Type == MaterialSkinType.RaceVariant || rme.Type == MaterialSkinType.RaceClanVariant)
                 {
                     if (rme.Type == MaterialSkinType.RaceVariant)
@@ -152,26 +152,26 @@ namespace MaterialTools
 #if DEBUG
                         PluginLog.Log($"[Human::ResolveMaterialPath] {(HumanModelSlots)slot} - player-added race variant used for race {(Race)human->Race}");
 #endif
-                        return BuildBodyMaterialPath(human->RaceSexID, 1, variant, remainingString);
+                        return BuildBodyMaterialPath(human->RaceSexId, 1, variant, remainingString);
                     }
                     else if (rme.Type == MaterialSkinType.RaceClanVariant)
                     {
 #if DEBUG
                         PluginLog.Log($"[Human::ResolveMaterialPath] {(HumanModelSlots)slot} - player-added race+clan variant used for race {(Race)human->Race}, clan {(Clan)human->Clan}");
 #endif
-                        return BuildBodyMaterialPath(human->RaceSexID, human->Clan % 2 == 0 ? 101 : 1, variant, remainingString);
+                        return BuildBodyMaterialPath(human->RaceSexId, human->Clan % 2 == 0 ? 101 : 1, variant, remainingString);
                     }
                 }
             }
 
             // original game implementation
-            var overridenRaceSexID = GetMaterialRaceSexIDOverride(human->RaceSexID);
+            var overridenRaceSexId = GetMaterialRaceSexIdOverride(human->RaceSexId);
 
             var bodyId = human->BodyType == 3 ? 91 : 1;
             if (checkClan && human->Clan == (byte)Clan.Xaela)
                 bodyId += 100; // Xaela have clan variants 
 
-            return BuildBodyMaterialPath(overridenRaceSexID, bodyId, variant, remainingString);
+            return BuildBodyMaterialPath(overridenRaceSexId, bodyId, variant, remainingString);
         }
 
         private unsafe string ResolveFaceMaterialPath(Human * human, byte * materialFilenameStr, bool overrideFace)
@@ -183,7 +183,7 @@ namespace MaterialTools
             {
                 // this is vanilla behavior for slot 13 only, overriding to face 1 and potentially a different race
                 // this creates seams when modding aura faces
-                raceSexId = GetMaterialRaceSexIDOverride(human->RaceSexID);
+                raceSexId = GetMaterialRaceSexIdOverride(human->RaceSexId);
 
                 if (raceSexId == (ushort)RaceSexId.HighlanderM || raceSexId == (ushort)RaceSexId.HighlanderF || human->Clan == (byte)Clan.Xaela)
                     faceId = 101;
@@ -195,9 +195,9 @@ namespace MaterialTools
             }
             else
             {
-                raceSexId = human->RaceSexID;
+                raceSexId = human->RaceSexId;
 
-                faceId = human->FaceID;
+                faceId = human->FaceId;
 
                 // hrothgar only have one set of "etc" materials and viera only have one set of "fac" materials
                 // the game simply checks the string
@@ -254,6 +254,7 @@ namespace MaterialTools
                 // viera: ear, other races: tail
                 case 12:
                     return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                // note that for cases 13/14/15 the body model loaded is not the same race necessarily but something up the tree, there are hardcoded functions for this in the game exe
                 // body model 2 (5 for aura)
                 case 13:
                     if (materialFilenameStr[8] == 0x66) // 'f' 
