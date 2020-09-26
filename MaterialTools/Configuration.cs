@@ -15,6 +15,8 @@ namespace MaterialTools
 
         public bool EnableSkinOverride { get; set; } = true;
 
+        public bool FixGameBehavior { get; set; } = true;
+
         // the below exist just to make saving less cumbersome
 
         [NonSerialized]

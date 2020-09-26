@@ -3,6 +3,7 @@ using Dalamud.Plugin;
 using MaterialTools.GameStructs;
 using MaterialTools.Models;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -125,49 +126,112 @@ namespace MaterialTools
             }
         }
 
-        private unsafe byte* ResolveMaterialPathDetour(Human* human, byte* outStrBuf, ulong bufSize, uint slot, byte* materialFileStr)
+        private unsafe string ResolveBodyMaterialPath(Human * human, byte * materialFilenameStr, bool checkClan, uint slot)
         {
-            if (!_plugin.Configuration.EnableSkinOverride
-                || !((slot <= 4) || (slot >= 13)) // head 0, top 1, hands 2, legs 3, feet 4, race_tree_seams 13, race_seams 14, race_body 15
-                || materialFileStr[8] != 0x62 // 'b' eg "mt_c0101b0001_a.mtrl" - only override skin/body materials, yes this is how the game checks
-                || human->BodyType == 3
-                || !RaceMaterials.ContainsKey(human->RaceSexID)
-                )
+            var variant = human->Race == (byte)Race.Hrothgar ? human->LipColorFurPattern : 1; // Hrothgar have fur variants
+
+            var remainingString = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr + 13));
+
+            // override cases
+            if (_plugin.Configuration.EnableSkinOverride && human->BodyType != 3 && RaceMaterials.ContainsKey(human->RaceSexID))
             {
-                return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFileStr); 
-            }                        
-
-            var rme = RaceMaterials[human->RaceSexID];
-
-            if (rme.Type == MaterialSkinType.GameOverride || rme.Type == MaterialSkinType.GameRaceVariant || rme.Type == MaterialSkinType.GameRaceClanVariant)
-                return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFileStr);
-            else
-            {
-                var remainingString = Marshal.PtrToStringAnsi(new IntPtr(materialFileStr + 13));
-
-                string outStr = "";
-
-                var variant = human->Race == (byte)Race.Hrothgar ? human->LipColorFurPattern : 1; // Hrothgar have fur variants
-
-                if (rme.Type == MaterialSkinType.RaceVariant)
+                var rme = RaceMaterials[human->RaceSexID];
+                if (rme.Type == MaterialSkinType.RaceVariant || rme.Type == MaterialSkinType.RaceClanVariant)
                 {
+                    if (rme.Type == MaterialSkinType.RaceVariant)
+                    {
 #if DEBUG
-                    PluginLog.Log($"[Human::ResolveMaterialPath] {(HumanModelSlots)slot} - player-added race variant used for race {(Race)human->Race}");
+                        PluginLog.Log($"[Human::ResolveMaterialPath] {(HumanModelSlots)slot} - player-added race variant used for race {(Race)human->Race}");
 #endif
-                    outStr = BuildSkinMaterialPath(human->RaceSexID, 1, variant, remainingString);
-                }
-                else if (rme.Type == MaterialSkinType.RaceClanVariant)
-                {
+                        return BuildSkinMaterialPath(human->RaceSexID, 1, variant, remainingString);
+                    }
+                    else if (rme.Type == MaterialSkinType.RaceClanVariant)
+                    {
 #if DEBUG
-                    PluginLog.Log($"[Human::ResolveMaterialPath] {(HumanModelSlots)slot} - player-added race+clan variant used for race {(Race)human->Race}, clan {(Clan)human->Clan}");
+                        PluginLog.Log($"[Human::ResolveMaterialPath] {(HumanModelSlots)slot} - player-added race+clan variant used for race {(Race)human->Race}, clan {(Clan)human->Clan}");
 #endif
-                    outStr = BuildSkinMaterialPath(human->RaceSexID, human->Clan % 2 == 0 ? 101 : 1, variant, remainingString);
+                        return BuildSkinMaterialPath(human->RaceSexID, human->Clan % 2 == 0 ? 101 : 1, variant, remainingString);
+                    }
                 }
-
-                var outStrBytes = System.Text.Encoding.ASCII.GetBytes(outStr);
-                Marshal.Copy(outStrBytes, 0, new IntPtr(outStrBuf), outStr.Length); // unsafe since I'm not checking str length vs the input bufsize like sprintf_s would
-                outStrBuf[outStr.Length] = 0x00; // GetBytes doesnt result in a null-terminated string
             }
+
+            // original game implementation
+            var overridenRaceSexID = ResolveRaceSexIDOverride(human->RaceSexID);
+
+            var bodyNumber = human->BodyType == 3 ? 91 : 1;
+            if (checkClan && human->Clan == (byte)Clan.Xaela)
+                bodyNumber += 100; // Xaela have clan variants 
+
+            return BuildSkinMaterialPath(overridenRaceSexID, bodyNumber, variant, remainingString);
+        }
+
+        private unsafe byte* ResolveMaterialPathDetour(Human* human, byte* outStrBuf, ulong bufSize, uint slot, byte* materialFilenameStr)
+        {
+#if DEBUG
+            var materialFilename = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr));
+            PluginLog.Log($"hook call => Human::ResolveMaterialPath(this={(long)human:X}, outStrBuf={(long)outStrBuf:X}, bufSize={bufSize}, slot={slot}, materialFilenameStr={materialFilename})");
+#endif
+            var outStr = "";
+
+            switch (slot)
+            {
+                // equipment: head/body/arms/legs/feet
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    if (materialFilenameStr[8] == 0x62) // 'b' eg "mt_c0101b0001_a.mtrl" - yes this is how the game checks if a material is skin material
+                    {
+                        outStr = ResolveBodyMaterialPath(human, materialFilenameStr, true, slot);
+                    }
+                    else
+                    {
+                        return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                    }
+                    break;
+                // equipment: ears/neck/wrist/rfinger/lfinger
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                case 9:
+                    return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                // hair
+                case 10:
+                    return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                // face
+                case 11:
+                    return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                // viera: ear, other races: tail
+                case 12:
+                    return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                // body model 2 (5 for aura)
+                case 13:
+                    if (materialFilenameStr[8] == 0x66) // 'f' 
+                        return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                    else
+                        outStr = ResolveBodyMaterialPath(human, materialFilenameStr, true, slot);
+                    break;
+                // body model 2
+                case 14:
+                    outStr = ResolveBodyMaterialPath(human, materialFilenameStr, true, slot);
+                    break;
+                // body model 3
+                case 15:
+                    // the game's version doesn't check the clan here and always loads b0001's skin even when the clan is xaela (who have their own skin)
+                    // unsure if this creates seam issues but its an easy fix anyway
+                    if (_plugin.Configuration.FixGameBehavior == true)
+                        outStr = ResolveBodyMaterialPath(human, materialFilenameStr, true, slot);
+                    else
+                        outStr = ResolveBodyMaterialPath(human, materialFilenameStr, false, slot);
+                    break;
+            }
+
+            var outStrBytes = System.Text.Encoding.ASCII.GetBytes(outStr);
+            var strLen = outStr.Length > (int)bufSize - 1 ? (int)bufSize - 1 : outStr.Length; // this should never happen, but the game uses sprintf_s so we'll be safe too
+            Marshal.Copy(outStrBytes, 0, new IntPtr(outStrBuf), strLen);
+            outStrBuf[strLen] = 0x00; // GetBytes doesnt result in a null-terminated string
 
             return outStrBuf;
         }
