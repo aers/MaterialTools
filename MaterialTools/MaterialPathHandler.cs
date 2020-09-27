@@ -124,6 +124,14 @@ namespace MaterialTools
             return String.Format(earFormatStr, raceSexId, earId, raceSexId, earId, remainder);
         }
 
+        // chara/human/c%04d/obj/hair/h%04d/material/v0001/mt_c%04d%s
+        private static string hairFormatStr = "chara/human/c{0:D4}/obj/hair/h{1:D4}/material/v0001/mt_c{2:D4}{3}";
+
+        public static string BuildHairMaterialPath(ushort raceSexId, ushort hairId, string remainder)
+        {
+            return String.Format(hairFormatStr, raceSexId, hairId, raceSexId, remainder);
+        }
+
         // function copied from game function
         // E8 ? ? ? ? 44 0F B6 9B ? ? ? ?
         public ushort GetMaterialRaceSexIdOverride(ushort raceSexID)
@@ -242,6 +250,26 @@ namespace MaterialTools
             return BuildTailMaterialPath(human->RaceSexId, tailId, variant, remainingString);
         }
 
+        private unsafe string ResolveHairMaterialPath(Human * human, byte * materialFilenameStr)
+        {
+            ushort hairId = human->HairId;
+            ushort raceSexId = human->RaceSexId;
+
+            if (hairId > 115 && hairId <= 200)
+            {
+                raceSexId = human->Sex == (byte)Sex.Female ? (ushort)RaceSexId.MidlanderF : (ushort)RaceSexId.MidlanderM;
+            }
+            else if (hairId > 100)
+            {
+                if (human->RaceSexId != (ushort)RaceSexId.MiqoteM && human->RaceSexId != (ushort)RaceSexId.MiqoteF)
+                    raceSexId = human->Sex == (byte)Sex.Female ? (ushort)RaceSexId.MidlanderF : (ushort)RaceSexId.MidlanderM;
+            }
+
+            var remainingString = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr + 8));
+
+            return BuildHairMaterialPath(raceSexId, hairId, remainingString);
+        }
+
         private unsafe byte* ResolveMaterialPathDetour(Human* human, byte* outStrBuf, ulong bufSize, uint slot, byte* materialFilenameStr)
         {
 #if DEBUG
@@ -277,7 +305,8 @@ namespace MaterialTools
                     return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
                 // hair
                 case 10:
-                    return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                    outStr = ResolveHairMaterialPath(human, materialFilenameStr);
+                    break;
                 // face
                 case 11:
                     outStr = ResolveFaceMaterialPath(human, materialFilenameStr, false);

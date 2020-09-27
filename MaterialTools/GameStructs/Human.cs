@@ -76,7 +76,7 @@ namespace MaterialTools.GameStructs
 
         //
         [FieldOffset(0x938)] public ushort RaceSexId; // cXXXX ID (0101, 0201, etc)
-
+        [FieldOffset(0x93A)] public ushort HairId; // hXXXX 
         [FieldOffset(0x93C)] public ushort FaceId; // fXXXX ID
         [FieldOffset(0x93E)] public ushort TailEarId; // tXXXX/zXXXX(viera)
 
