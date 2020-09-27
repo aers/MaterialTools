@@ -3,7 +3,6 @@ using MaterialTools.GameStructs;
 using MaterialTools.Models;
 using System;
 using System.Numerics;
-using System.Threading;
 
 namespace MaterialTools
 {
@@ -12,6 +11,7 @@ namespace MaterialTools
         private readonly Plugin _plugin;
 
         private bool visible = false;
+
         public bool Visible
         {
             get { return this.visible; }
@@ -19,6 +19,7 @@ namespace MaterialTools
         }
 
         private bool materialsListVisible = false;
+
         public bool MaterialsListVisible
         {
             get { return this.materialsListVisible; }

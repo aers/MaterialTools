@@ -76,7 +76,9 @@ namespace MaterialTools.GameStructs
 
         //
         [FieldOffset(0x938)] public ushort RaceSexId; // cXXXX ID (0101, 0201, etc)
+
         [FieldOffset(0x93C)] public ushort FaceId; // fXXXX ID
+        [FieldOffset(0x93E)] public ushort TailEarId; // tXXXX/zXXXX(viera)
 
         // 0xA0C - A20 - visor data
         // 0xA38 - temporary storage when changing gear in slots

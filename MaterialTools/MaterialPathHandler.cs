@@ -3,7 +3,6 @@ using Dalamud.Plugin;
 using MaterialTools.GameStructs;
 using MaterialTools.Models;
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -104,9 +103,25 @@ namespace MaterialTools
         // chara/human/c%04d/obj/face/f%04d/material/mt_c%04df%04d%s
         private static string faceFormatStr = "chara/human/c{0:D4}/obj/face/f{1:D4}/material/mt_c{2:D4}f{3:D4}{4}";
 
-        public static string BuildFaceMaterialPath(ushort raceSexId, int faceId, string remainder)
+        public static string BuildFaceMaterialPath(ushort raceSexId, ushort faceId, string remainder)
         {
             return String.Format(faceFormatStr, raceSexId, faceId, raceSexId, faceId, remainder);
+        }
+
+        // chara/human/c%04d/obj/tail/t%04d/material/v0001/mt_c%04dt%04d%s
+        private static string tailFormatStr = "chara/human/c{0:D4}/obj/tail/t{1:D4}/material/v{2:D4}/mt_c{3:D4}t{4:D4}{5}";
+
+        public static string BuildTailMaterialPath(ushort raceSexId, ushort tailId, int variant, string remainder)
+        {
+            return String.Format(tailFormatStr, raceSexId, tailId, variant, raceSexId, tailId, remainder);
+        }
+
+        // chara/human/c%04d/obj/zear/z%04d/material/mt_c%04dz%04d%s
+        private static string earFormatStr = "chara/human/c{0:D4}/obj/zear/z{1:D4}/material/mt_c{2:D4}z{3:D4}{4}";
+
+        public static string BuildEarMaterialPath(ushort raceSexId, ushort earId, string remainder)
+        {
+            return String.Format(earFormatStr, raceSexId, earId, raceSexId, earId, remainder);
         }
 
         // function copied from game function
@@ -135,7 +150,7 @@ namespace MaterialTools
             }
         }
 
-        private unsafe string ResolveBodyMaterialPath(Human * human, byte * materialFilenameStr, bool checkClan, uint slot)
+        private unsafe string ResolveBodyMaterialPath(Human* human, byte* materialFilenameStr, bool checkClan, uint slot)
         {
             var variant = human->Race == (byte)Race.Hrothgar ? human->LipColorFurPattern : 1; // Hrothgar have fur variants
 
@@ -169,12 +184,12 @@ namespace MaterialTools
 
             var bodyId = human->BodyType == 3 ? 91 : 1;
             if (checkClan && human->Clan == (byte)Clan.Xaela)
-                bodyId += 100; // Xaela have clan variants 
+                bodyId += 100; // Xaela have clan variants
 
             return BuildBodyMaterialPath(overridenRaceSexId, bodyId, variant, remainingString);
         }
 
-        private unsafe string ResolveFaceMaterialPath(Human * human, byte * materialFilenameStr, bool overrideFace)
+        private unsafe string ResolveFaceMaterialPath(Human* human, byte* materialFilenameStr, bool overrideFace)
         {
             ushort raceSexId = 0;
             ushort faceId = 0;
@@ -209,6 +224,22 @@ namespace MaterialTools
             var remainingString = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr + 13));
 
             return BuildFaceMaterialPath(raceSexId, faceId, remainingString);
+        }
+
+        private unsafe string ResolveTailMaterialPath(Human * human, byte * materialFilenameStr)
+        {
+            int variant = 1;
+            ushort tailId = human->TailEarId;
+
+            if (human->Race == (byte)Race.Hrothgar)
+            {
+                variant = human->LipColorFurPattern;
+                tailId = 1;
+            }
+
+            var remainingString = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr + 13));
+
+            return BuildTailMaterialPath(human->RaceSexId, tailId, variant, remainingString);
         }
 
         private unsafe byte* ResolveMaterialPathDetour(Human* human, byte* outStrBuf, ulong bufSize, uint slot, byte* materialFilenameStr)
@@ -253,11 +284,18 @@ namespace MaterialTools
                     break;
                 // viera: ear, other races: tail
                 case 12:
-                    return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                    if (human->Race == (byte)Race.Viera)
+                    {
+                        var remainingString = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr + 13));
+                        outStr = BuildEarMaterialPath(human->RaceSexId, human->TailEarId, remainingString);
+                    }
+                    else
+                        outStr = ResolveTailMaterialPath(human, materialFilenameStr);
+                    break;
                 // note that for cases 13/14/15 the body model loaded is not the same race necessarily but something up the tree, there are hardcoded functions for this in the game exe
                 // body model 2 (5 for aura)
                 case 13:
-                    if (materialFilenameStr[8] == 0x66) // 'f' 
+                    if (materialFilenameStr[8] == 0x66) // 'f'
                     {
                         if (_plugin.Configuration.FixGameBehavior)
                             outStr = ResolveFaceMaterialPath(human, materialFilenameStr, false);
