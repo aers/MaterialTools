@@ -81,7 +81,7 @@ namespace MaterialTools.GameStructs
         [FieldOffset(0x93E)] public ushort TailEarId; // tXXXX/zXXXX(viera)
 
         // 0xA0C - A20 - visor data
-        // 0xA38 - temporary storage when changing gear in slots
+        [FieldOffset(0xA38)] public byte* ChangedEquipData;
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 4)]
@@ -90,6 +90,15 @@ namespace MaterialTools.GameStructs
         [FieldOffset(0x00)] public ushort SetID;
         [FieldOffset(0x02)] public byte VariantID;
         [FieldOffset(0x03)] public byte DyeID;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 12)]
+    public unsafe struct ChangedEquipData
+    {
+        [FieldOffset(0x00)] public ushort SetID;
+        // 0x02 is also variantID but the game reads it from 0x04
+        [FieldOffset(0x03)] public byte DyeID;
+        [FieldOffset(0x04)] public byte VariantID;
     }
 
     public enum Race

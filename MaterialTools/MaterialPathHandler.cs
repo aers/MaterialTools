@@ -132,6 +132,22 @@ namespace MaterialTools
             return String.Format(hairFormatStr, raceSexId, hairId, raceSexId, remainder);
         }
 
+        // chara/equipment/e%04d/material/v%04d/%s
+        private static string equipmentFormatStr = "chara/equipment/e{0:D4}/material/v{1:D4}/{2}";
+
+        public static string BuildEquipmentMaterialPath(ushort setId, byte variantId, string filename)
+        {
+            return String.Format(equipmentFormatStr, setId, variantId, filename);
+        }
+
+        // chara/accessory/a%04d/material/v%04d/%s
+        private static string accessoryFormatStr = "chara/accessory/a{0:D4}/material/v{1:D4}/{2}";
+
+        public static string BuildAccessoryMaterialPath(ushort setId, byte variantId, string filename)
+        {
+            return String.Format(accessoryFormatStr, setId, variantId, filename);
+        }
+
         // function copied from game function
         // E8 ? ? ? ? 44 0F B6 9B ? ? ? ?
         public ushort GetMaterialRaceSexIdOverride(ushort raceSexID)
@@ -293,7 +309,11 @@ namespace MaterialTools
                     }
                     else
                     {
-                        return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                        var eqData = ((ChangedEquipData*)human->ChangedEquipData)[slot];
+                        if (eqData.VariantID == 0)
+                            return null; // game behavior
+                        var fn = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr));
+                        outStr = BuildEquipmentMaterialPath(eqData.SetID, eqData.VariantID, fn);
                     }
                     break;
                 // equipment: ears/neck/wrist/rfinger/lfinger
@@ -302,7 +322,12 @@ namespace MaterialTools
                 case 7:
                 case 8:
                 case 9:
-                    return hookResolveMaterialPath.Original(human, outStrBuf, bufSize, slot, materialFilenameStr);
+                    var equipData = ((ChangedEquipData*)human->ChangedEquipData)[slot];
+                    if (equipData.VariantID == 0)
+                        return null; // game behavior
+                    var filename = Marshal.PtrToStringAnsi(new IntPtr(materialFilenameStr));
+                    outStr = BuildAccessoryMaterialPath(equipData.SetID, equipData.VariantID, filename);
+                    break;
                 // hair
                 case 10:
                     outStr = ResolveHairMaterialPath(human, materialFilenameStr);
