@@ -67,9 +67,8 @@ namespace MaterialTools
             string firstClanVariant = BuildBodyMaterialPath(firstClanRaceSexID, 1, 1, "_a.mtrl");
             string secondClanVariant = BuildBodyMaterialPath(secondClanRaceSexID, firstClanRaceSexID == secondClanRaceSexID ? 101 : 1, 1, "_a.mtrl");
 
-            // dalamud's lumina interface doesnt support FileExists yet
-            bool hasRaceVariant = _plugin.PluginInterface.Data.GetFile(firstClanVariant) != null;
-            bool hasRaceClanVariant = _plugin.PluginInterface.Data.GetFile(secondClanVariant) != null && hasRaceVariant;
+            bool hasRaceVariant = _plugin.PluginInterface.Data.FileExists(firstClanVariant);
+            bool hasRaceClanVariant = _plugin.PluginInterface.Data.FileExists(secondClanVariant) && hasRaceVariant;
             bool hasGameRaceVariant = (firstClanRaceSexID == rme.OverrideRaceSexID);
 
             if (hasGameRaceClanVariant)
